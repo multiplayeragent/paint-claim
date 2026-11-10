@@ -1,0 +1,21 @@
+{
+  "name": "Paint Claim",
+  "genre": "arcade",
+  "dim": "2D",
+  "mode": "Drop-in",
+  "players": "2–12",
+  "hook": "Draw a loop, claim the land. Cut their trails.",
+  "how": "Leave your land and a trail follows you; get back home and everything inside the loop turns your color. Cross someone's trail to knock them out, but if anyone crosses yours, you're out.",
+  "controls": "Arrow keys, WASD or the mouse to turn; swipe on touch",
+  "uses": [
+    ["Leaderboard", "Each player's biggest share of the map, shown when you're out."],
+    ["Host-run rules", "The host's browser fills in every loop and keeps the map; if it leaves, the next player takes over."],
+    ["Bots", "Bots fill the map until enough people join."],
+    ["Live sync", "Every runner and trail moves for everyone at once; whoever gets cut says so."]
+  ],
+  "ideas": [
+    "Give everyone a speed boost while they're on their own land",
+    "Make the map an island with water around the edges",
+    "Add teams that share their land"
+  ]
+}
