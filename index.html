@@ -482,11 +482,13 @@ function botThink(b) {
   b.want = straight;
 }
 function safeStep(r, d) { const x = r.cx + DIRS[d][0], y = r.cy + DIRS[d][1]; return inGrid(x, y) && !r.keys.has(idx(x, y)); }
-/** The heading that gets closest to `g`, keeping straight on a tie. */
+/** The heading that gets closest to `g`, keeping straight on a tie unless straight leads away (then it turns). */
 function toward(r, ok, g) {
   let best = ok[0], bd = Infinity;
+  const now = Math.abs(g.x - r.cx) + Math.abs(g.y - r.cy);
   for (const d of ok) {
-    const dist = Math.abs(g.x - r.cx - DIRS[d][0]) + Math.abs(g.y - r.cy - DIRS[d][1]) - (d === r.dir ? 0.5 : 0);
+    let dist = Math.abs(g.x - r.cx - DIRS[d][0]) + Math.abs(g.y - r.cy - DIRS[d][1]);
+    if (d === r.dir) dist += dist > now ? 0.5 : -0.5;
     if (dist < bd) { bd = dist; best = d; }
   }
   return best;
@@ -834,7 +836,8 @@ function tally() {
 /** Someone is out: a feed line for everyone, a cheer for the cutter, a burst where it happened. */
 function onOut(msg) {
   if (!msg || !msg.v) return;
-  const v = runnerById(msg.v), why = { cut: "cut", self: "crossed its own trail", wall: "hit the edge", land: "lost all its land", long: "ran out of trail" }[msg.why] || "is out";
+  const its = msg.v === me.id ? "your" : "their";
+  const v = runnerById(msg.v), why = { cut: "cut", self: `crossed ${its} own trail`, wall: "hit the edge", land: `lost all ${its} land`, long: "ran out of trail" }[msg.why] || "is out";
   if (v) burst((v.x + 0.5) * CELL, (v.y + 0.5) * CELL, v.color, 34, 420);
   feed.unshift({ text: msg.why === "cut" ? `${nameOf(msg.by)} cut ${nameOf(msg.v)}` : `${nameOf(msg.v)} ${why}`, color: (runnerById(msg.by) || v || {}).color || "#26304a", at: performance.now() });
   feed.length = Math.min(feed.length, 4);
