@@ -29,7 +29,7 @@
   .card { box-sizing: border-box; width: min(380px, calc(100vw - 32px)); max-height: 84vh; overflow: auto; padding: 22px; border-radius: 18px; background: #fff; box-shadow: 0 10px 40px #0003; text-align: center; }
   .card h2 { margin: 0 0 4px; font-size: 25px; }
   .card h3 { margin: 16px 0 4px; font-size: 12px; color: #7a839a; text-transform: uppercase; letter-spacing: .06em; text-align: left; }
-  .card ol { text-align: left; margin: 0 0 16px; padding-left: 26px; font-size: 14px; min-height: 40px; }
+  .card ol { text-align: left; margin: 0 0 16px; padding-left: 26px; font-size: 14px; min-height: 40px; } .card li.note { list-style: none; margin-left: -26px; } /* a status line, not a numbered entry */
   .card li span { float: right; font-variant-numeric: tabular-nums; }
   button.go { width: 100%; min-height: 48px; border: 0; border-radius: 12px; background: #3a86ff; color: #fff; font: 800 17px system-ui, sans-serif; cursor: pointer; box-shadow: 0 4px 0 #2563c9; }
   button.go:active { transform: translateY(3px); box-shadow: 0 1px 0 #2563c9; }
@@ -50,7 +50,7 @@
     <h2 id="overTitle">You're out</h2>
     <div id="overScore"></div>
     <h3>Most land, all time</h3>
-    <ol id="board"><li>Loading the leaderboard…</li></ol>
+    <ol id="board"><li class="note">Loading the leaderboard…</li></ol>
     <button class="go" id="again">Play again</button>
   </div>
 </div>
@@ -867,11 +867,11 @@ function showOver() {
   $("overScore").textContent = `Most land this time: ${me.best.toFixed(1)}%${me.kills ? ` · ${me.kills} cut${me.kills === 1 ? "" : "s"}` : ""}`;
   $("over").hidden = false;
   const list = $("board");
-  if (!board) { list.innerHTML = "<li>Leaderboards need a connection.</li>"; return; }
-  list.innerHTML = "<li>Loading the leaderboard…</li>";
+  if (!board) { list.innerHTML = `<li class="note">Leaderboards need a connection.</li>`; return; }
+  list.innerHTML = `<li class="note">Loading the leaderboard…</li>`;
   board.submit(Math.round(me.best * 10)).catch(() => null).then(() => board.top(10)).then(({ entries }) => {
-    list.innerHTML = entries.length ? entries.map((e) => `<li>${esc(e.username || "Player")}<span>${(e.score / 10).toFixed(1)}%</span></li>`).join("") : "<li>No scores yet. You're first.</li>";
-  }).catch(() => { list.innerHTML = "<li>Couldn't load the leaderboard.</li>"; });
+    list.innerHTML = entries.length ? entries.map((e) => `<li>${esc(e.username || "Player")}<span>${(e.score / 10).toFixed(1)}%</span></li>`).join("") : `<li class="note">No scores yet. You're first.</li>`;
+  }).catch(() => { list.innerHTML = `<li class="note">Couldn't load the leaderboard.</li>`; });
 }
 $("again").onclick = () => spawnMe();
 
@@ -923,6 +923,7 @@ cv.addEventListener("pointerdown", (e) => {
   if (e.pointerType === "mouse") { mouse.on = true; mouse.x = e.clientX; mouse.y = e.clientY; return; }
   swipe = { id: e.pointerId, x: e.clientX, y: e.clientY };
 });
+cv.addEventListener("contextmenu", (e) => e.preventDefault());
 cv.addEventListener("pointermove", (e) => {
   if (e.pointerType === "mouse") { if (Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y) > 4) { mouse.on = true; if ($("over").hidden) go(); } mouse.x = e.clientX; mouse.y = e.clientY; return; }
   if (!swipe || swipe.id !== e.pointerId) return;
