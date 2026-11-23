@@ -5,7 +5,7 @@
   "mode": "Drop-in",
   "players": "2–12",
   "hook": "Draw a loop, claim the land. Cut their trails.",
-  "how": "Leave your land and a trail follows you; get back home and everything inside the loop turns your color. Cross someone's trail to knock them out, but if anyone crosses yours, you're out.",
+  "how": "Leave your land and a trail follows you; get back home and everything inside the loop turns your color. Cross someone's trail to knock them out, but if anyone crosses yours, you're out. Running into the edge of the map or your own trail knocks you out too.",
   "controls": "Arrow keys, WASD or the mouse to turn; swipe on touch",
   "uses": [
     ["Leaderboard", "Each player's biggest share of the map, shown when you're out."],

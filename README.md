@@ -6,7 +6,7 @@ Draw a loop, claim the land. Cut their trails. A multiplayer starter game from [
 
 ## How it plays
 
-Leave your land and a trail follows you; get back home and everything inside the loop turns your color. Cross someone's trail to knock them out, but if anyone crosses yours, you're out.
+Leave your land and a trail follows you; get back home and everything inside the loop turns your color. Cross someone's trail to knock them out, but if anyone crosses yours, you're out. Running into the edge of the map or your own trail knocks you out too.
 
 **Controls:** Arrow keys, WASD or the mouse to turn; swipe on touch.
 

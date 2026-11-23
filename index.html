@@ -33,7 +33,7 @@
   .card li span { float: right; font-variant-numeric: tabular-nums; }
   button.go { width: 100%; min-height: 48px; border: 0; border-radius: 12px; background: #3a86ff; color: #fff; font: 800 17px system-ui, sans-serif; cursor: pointer; box-shadow: 0 4px 0 #2563c9; }
   button.go:active { transform: translateY(3px); box-shadow: 0 1px 0 #2563c9; }
-  @media (max-width: 640px) { #top { width: 130px; font-size: 12px; } #land { font-size: 26px; } #feed { top: calc(max(12px, env(safe-area-inset-top)) + 125px); } }
+  @media (max-width: 640px) { #top { width: 130px; font-size: 12px; } #land { font-size: 26px; } #hint { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 128px); } /* above the minimap */ #feed { top: calc(max(12px, env(safe-area-inset-top)) + 125px); } }
 </style>
 <script src="https://cdn.multiplayeragent.com/sdk/mp.global.js"></script>
 </head>
@@ -81,7 +81,8 @@
  *     map, one letter per square, 30 rows per field), `slots` {id: letter} and `bots`.
  *     A new host adopts all of them from state and carries on.
  *   - Everyone else sends the host intents: "spawn" {x, y} (stamp my starting patch) and
- *     "claim" {p: corners} (I got home: fill my loop). The host fills the loop and writes
+ *     "claim" {p: corners} (I got home: fill my loop). The host fills the loop (only if it ends
+ *     on the claimer's land and starts there or where its published trail starts) and writes
  *     the map. Until it comes back, the claimer shows its loop as already painted.
  *   - BEING CUT IS THE VICTIM'S OWN FACT: only you check other heads against your own trail;
  *     when one reaches it you are out and send "out" {v: you, by: cutter, why}. (The host does
@@ -301,7 +302,7 @@ function arrive(r, was) {
 const knockOut = (r, why, by) => (r === me ? die(why, by) : botDown(r, why, by));
 function claimed(r, pts) {
   if (r === me) return myClaim(pts);
-  claimFx(applyClaim(r.id, pts), r.color, false);
+  claimFx(applyClaim(r.id, pts, pts[0]), r.color, false);
 }
 
 /** Everyone whose head moved onto new squares this frame: { id, moved: [square, ...] }. */
@@ -374,10 +375,13 @@ function applySpawn(id, x, y) {
   world.spawnedAt.set(id, performance.now());
 }
 
-/** A "claim" intent: the trail and everything it closes off becomes the claimer's. Returns the squares won. */
-function applyClaim(id, pts) {
-  const ch = world.slots[id], trail = Array.isArray(pts) && pts.length <= CONFIG.maxTurns + 2 ? squaresOf(pts) : null;
+/** A "claim" intent: the trail and everything it closes off becomes the claimer's. Returns the squares won.
+ *  The loop must end on the claimer's land, and start there too (or where its published trail starts). */
+function applyClaim(id, pts, start) {
+  const ch = world.slots[id], trail = Array.isArray(pts) && pts.length >= 2 && pts.length <= CONFIG.maxTurns + 2 ? squaresOf(pts) : null;
   if (!ch || !trail) return [];
+  const startsOk = world.grid[trail[0]] === ch || (start && start[0] === pts[0][0] && start[1] === pts[0][1]);
+  if (world.grid[trail[trail.length - 1]] !== ch || !startsOk) return [];
   const won = enclosed((i) => world.grid[i] === ch, trail);
   for (const i of won) setCell(i, ch);
   return won;
@@ -555,7 +559,7 @@ function myClaim(pts) {
   const trail = squaresOf(pts);
   if (!trail) return;
   const won = enclosed(isMine, trail);
-  if (isHost()) applyClaim(me.id, pts);
+  if (isHost()) applyClaim(me.id, pts, pts[0]);
   else { net.send("claim", { p: pts }); const until = performance.now() + 1500; for (const i of won) me.pending.set(i, until); }
   claimFx(won, me.color, true);
 }
@@ -584,7 +588,7 @@ function myTick(dt, now) {
   if (me.gridCells > 0 && now - me.spawnAt > 600) me.seenLand = true;
   if (!me.seenLand && now - me.spawnSent > 1800) sendSpawn();
   if (me.seenLand && me.gridCells === 0 && !me.pending.size) return die("land", "");
-  me.best = Math.max(me.best, pct(me.cells));
+  me.best = Math.max(me.best, pct(me.gridCells)); // the host's map, not the loop still on its way
   if (board && me.best > me.submitted + 0.5 && now - me.lastSubmit > 30000) { me.lastSubmit = now; me.submitted = me.best; board.submit(Math.round(me.best * 10)).catch(() => null); }
   publish(false);
 }
@@ -959,8 +963,8 @@ function frame(now) {
   net = await connect();
   net.onState((st) => { S = st; });
   net.on("spawn", (msg, from) => { if (isHost() && msg) { if (!world.acting) adoptWorld(); applySpawn(from, msg.x, msg.y); } });
-  net.on("claim", (msg, from) => { if (isHost() && msg && views.get(from)?.alive) { if (!world.acting) adoptWorld(); claimFx(applyClaim(from, msg.p), views.get(from).color, false); } });
-  net.on("out", (msg) => onOut(msg));
+  net.on("claim", (msg, from) => { if (isHost() && msg && views.get(from)?.alive) { if (!world.acting) adoptWorld(); claimFx(applyClaim(from, msg.p, views.get(from).trail[0]), views.get(from).color, false); } });
+  net.on("out", (msg, from) => { if (msg && (msg.v === from || views.get(msg.v)?.bot || world.bots.has(msg.v))) onOut(msg); }); // only the victim says it's out (the host says it for bots)
   net.onDisconnect(() => { netDown = true; $("net").textContent = "Reconnecting…"; });
   net.onReconnect(() => { netDown = false; });
   if (!net.offline && typeof MP !== "undefined") board = MP.auth({ key: MP_CONNECT.key, apiUrl: MP_CONNECT.apiUrl }).leaderboard(CONFIG.board);
